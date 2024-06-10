@@ -1,0 +1,18 @@
+# Django
+*.log
+*.pot
+*.pyc
+__pycache__/
+
+# Virtualenv
+venv/
+env/
+ENV/
+.env
+
+# Database
+*.sqlite3
+
+# Static and Media
+staticfiles/
+media/
