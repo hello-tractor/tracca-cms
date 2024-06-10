@@ -1,0 +1,12 @@
+<!-- tracker/templates/tracker/tractor_list.html -->
+{% extends 'tracker/base_generic.html' %}
+{% block content %}
+{% load static %}
+<h2>Tractor List</h2>
+<a href="{% url 'tractor_create' %}">Add Tractor</a>
+<ul>
+    {% for tractor in tractors %}
+    <li>{{ tractor.registration_number }} - {{ tractor.model.name }} <a href="{% url 'tractor_update' tractor.pk %}">Edit</a></li>
+    {% endfor %}
+</ul>
+{% endblock %}

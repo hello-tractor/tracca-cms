@@ -1,0 +1,29 @@
+<!-- tracker/templates/tracker/base_generic.html -->
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asset Tracking</title>
+    <link rel="stylesheet" type="text/css" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+    <header>
+        <h1>Asset Tracking System</h1>
+        <nav>
+            <a href="{% url 'customer_list' %}">Customers</a>
+            <a href="{% url 'tractor_list' %}">Tractors</a>
+            <a href="{% url 'implement_list' %}">Implements</a>
+        </nav>
+    </header>
+    <main>
+        {% block content %}
+        {% endblock %}
+    </main>
+    <footer>
+        <p>&copy; 2024 Asset Tracking System</p>
+    </footer>
+</body>
+</html>
+

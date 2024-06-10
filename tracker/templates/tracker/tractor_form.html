@@ -1,0 +1,11 @@
+<!-- tracker/templates/tracker/tractor_form.html -->
+{% extends 'tracker/base_generic.html' %}
+{% block content %}
+{% load static %}
+<h2>Add Tractor</h2>
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Save</button>
+</form>
+{% endblock %}
