@@ -1,5 +1,4 @@
 from django.contrib import admin
-from import_export.admin import ImportExportModelAdmin
 from .models import customer, tractor_brand, tractor_model, tractor_details, implements, ownership_history
 
 @admin.register(customer)

@@ -55,7 +55,7 @@ class Command(BaseCommand):
                 chassis_number=fake.unique.ean13(),
                 engine_number=fake.unique.ean8(),
                 color=fake.color_name(),
-                owner=customer.objects.order_by('?').first(),
+                owner=customers.objects.order_by('?').first(),
                 updated_by=User.objects.order_by('?').first()
             )
 
@@ -65,7 +65,7 @@ class Command(BaseCommand):
                 brand=fake.company(),
                 chassis_number=fake.unique.ean13(),
                 color=fake.color_name(),
-                owner=customer.objects.order_by('?').first(),
+                owner=customers.objects.order_by('?').first(),
                 updated_by=User.objects.order_by('?').first()
             )
 
