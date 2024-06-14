@@ -1,4 +1,3 @@
-# myapp/tasks.py
 import requests
 from requests.auth import HTTPBasicAuth
 from django.utils.dateparse import parse_datetime
@@ -18,17 +17,10 @@ def fetch_and_store_live_tracking_data():
                 device_id=position['deviceId'],
                 latitude=position['latitude'],
                 longitude=position['longitude'],
-                iccid1 = position['attributes'].get('io11') or position['attributes'].get('iccid'),
-                iccid2 = position['attributes'].get('io14', 'N/A'),
-                sim_iccid = f"{iccid1}{ iccid2}",
+                # iccid1 = position['attributes'].get('io11') or position['attributes'].get('iccid'),
+                # iccid2 = position['attributes'].get('io14', 'N/A'),
+                # sim_iccid = f"{iccid1}{ iccid2}",
                 timestamp=parse_datetime(position['serverTime'])
             )
     else:
         print(f"Failed to fetch data: {response.status_code} - {response.text}")
-# myapp/tasks.py
-
-from celery import shared_task
-
-@shared_task
-def test_task():
-    return "The task is running"

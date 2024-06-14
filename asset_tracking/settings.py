@@ -32,6 +32,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'channels',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -42,6 +43,15 @@ INSTALLED_APPS = [
     'live_tracking_data',
     'django_celery_beat',
 ]
+
+CHANNEL_LAYERS ={
+    'default':{
+        'BACKEND': 'chennels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('127.0.0.1', 8000)],
+        },
+    },
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -71,7 +81,8 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'asset_tracking.wsgi.application'
+# WSGI_APPLICATION = 'asset_tracking.wsgi.application'
+ASGI_APPLICATION = 'asset_tracking.asgi.application'
 
 
 # Database
