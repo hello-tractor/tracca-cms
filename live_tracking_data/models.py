@@ -9,6 +9,11 @@ class live_tracking_data(models.Model):
     longitude = models.FloatField(default=0.0)
     speed = models.FloatField(default=0.0)
     other_data = models.JSONField()
+    position = models.CharField(max_length=255, default=0.0)
+    engine_state = models.CharField(max_length=50, null=True, blank=True)
+    asset_battery = models.FloatField(null=True, blank=True)
+    raw_value = models.CharField(max_length=255, null=True, blank=True)
+    sim_iccid = models.CharField(max_length=50, null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
