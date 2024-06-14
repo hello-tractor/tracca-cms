@@ -1,0 +1,6 @@
+API_KEY = "eLzU-1pBKF8zopqUkyvK"
+USERNAME = "justine@hellotractor.com"
+PASSWORD = "!?Orutwa840"
+HOST = "49.13.203.42"
+PORT = "5027"
+BASE_URL = "https://xc3cc2f3a.traccar.com"
