@@ -3,8 +3,8 @@ from .models import customer, tractor_brand, tractor_model, tractor_details, imp
 
 @admin.register(customer)
 class CustomerAdmin(admin.ModelAdmin):
-    list_display = ('first_name', 'last_name', 'email', 'phone_number')
-    search_fields = ('first_name', 'last_name', 'email')
+    list_display = ('email', 'first_name', 'last_name', 'phone_number', 'created_at', 'address')
+    search_fields = ('first_name', 'email')
 
 @admin.register(tractor_brand)
 class TractorBrandAdmin(admin.ModelAdmin):
@@ -14,20 +14,20 @@ class TractorBrandAdmin(admin.ModelAdmin):
 @admin.register(tractor_model)
 class TractorModelAdmin(admin.ModelAdmin):
     list_display = ('brand', 'name')
-    search_fields = ('name',)
+    search_fields = ('brand',)
     list_filter = ('brand',)
 
 @admin.register(tractor_details)
 class TractorAdmin(admin.ModelAdmin):
-    list_display = ('brand', 'model', 'registration_number', 'chassis_number', 'engine_number', 'color', 'owner', 'updated_by')
+    list_display = ('registration_number','brand', 'model', 'chassis_number', 'engine_number', 'color', 'owner', 'updated_by')
     search_fields = ('registration_number', 'chassis_number', 'engine_number')
-    list_filter = ('brand', 'model', 'color', 'owner')
+    list_filter = ('registration_number', 'chassis_number')
 
 @admin.register(implements)
 class ImplementAdmin(admin.ModelAdmin):
     list_display = ('brand', 'chassis_number', 'color', 'owner', 'updated_by')
     search_fields = ('brand', 'chassis_number')
-    list_filter = ('brand', 'color', 'owner')
+    list_filter = ('brand', 'owner')
 
 @admin.register(ownership_history)
 class OwnershipHistoryAdmin(admin.ModelAdmin):
