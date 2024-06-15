@@ -81,8 +81,8 @@ TEMPLATES = [
     },
 ]
 
-# WSGI_APPLICATION = 'asset_tracking.wsgi.application'
-ASGI_APPLICATION = 'asset_tracking.asgi.application'
+WSGI_APPLICATION = 'asset_tracking.wsgi.application'
+# ASGI_APPLICATION = 'asset_tracking.asgi.application'
 
 
 # Database
