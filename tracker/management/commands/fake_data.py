@@ -1,72 +1,83 @@
-# tracker/management/commands/generate_sample_data.py
-import random
+# tracker/management/commands/populate_fake_data.py
+
 from django.core.management.base import BaseCommand
 from faker import Faker
-from tracker.models import tractor_brand, tractor_model, tractor_details, implements, customer
+from django.utils import timezone
+from tracker.models import Customer, TractorBrand, TractorModel, TractorDetails, Implement, OwnershipHistory
 from django.contrib.auth.models import User
+import random
 
 class Command(BaseCommand):
-    help = 'Generate sample data for the asset tracking system'
+    help = 'Populate database with fake data'
 
     def handle(self, *args, **kwargs):
         fake = Faker()
 
-        # Create sample users
-        for _ in range(15):
-            user = User.objects.create_user(
-                username=fake.user_name(),
-                email=fake.email(),
-                password='password123'
-            )
-            user.save()
+        # Clear existing data
+        Customer.objects.all().delete()
+        TractorBrand.objects.all().delete()
+        TractorModel.objects.all().delete()
+        TractorDetails.objects.all().delete()
+        Implement.objects.all().delete()
+        OwnershipHistory.objects.all().delete()
 
-        # Create sample customers
-        for _ in range(10):
-            customers = customer.objects.create(
+        # Create Tractor Brands
+        tractor_brands = []
+        for _ in range(5):
+            tractor_brands.append(TractorBrand.objects.create(name=fake.company()))
+
+        # Create Tractor Models
+        tractor_models = []
+        for brand in tractor_brands:
+            for _ in range(10):
+                tractor_models.append(TractorModel.objects.create(brand=brand, name=fake.word()))
+
+        # Create Customers
+        customers = []
+        for _ in range(20):
+            customers.append(Customer.objects.create(
                 first_name=fake.first_name(),
                 last_name=fake.last_name(),
                 email=fake.email(),
                 phone_number=fake.phone_number(),
-                address=fake.address()
-            )
+                address=fake.address(),
+                created_at=fake.date_time_between(start_date='-1y', end_date='now', tzinfo=timezone.get_current_timezone())
+            ))
 
-        # Create sample tractor brands
-        brands = []
-        for _ in range(10):
-            brand = tractor_brand.objects.create(name=fake.company())
-            brands.append(brand)
-
-        # Create sample tractor models
-        models = []
-        for brand in brands:
-            for _ in range(20):
-                model = tractor_model.objects.create(
-                    brand=brand,
-                    name=fake.word()
-                )
-                models.append(model)
-
-        # Create sample tractors
+        # Create Tractor Details
+        tractor_details = []
         for _ in range(20):
-            tractor_details.objects.create(
-                brand=random.choice(brands),
-                model=random.choice(models),
-                registration_number=fake.unique.license_plate(),
-                chassis_number=fake.unique.ean13(),
-                engine_number=fake.unique.ean8(),
+            tractor_details.append(TractorDetails.objects.create(
+                brand=random.choice(tractor_brands),
+                model=random.choice(tractor_models),
+                registration_number=fake.unique.uuid4(),
+                chassis_number=fake.unique.uuid4(),
+                engine_number=fake.unique.uuid4(),
                 color=fake.color_name(),
-                owner=customers.objects.order_by('?').first(),
-                updated_by=User.objects.order_by('?').first()
-            )
+                owner=random.choice(customers),
+                updated_by=User.objects.first()  # Replace with actual user selection logic
+            ))
 
-        # Create sample implements
+        # Create Implements
+        implements = []
         for _ in range(20):
-            implements.objects.create(
+            implements.append(Implement.objects.create(
                 brand=fake.company(),
-                chassis_number=fake.unique.ean13(),
+                chassis_number=fake.unique.uuid4(),
                 color=fake.color_name(),
-                owner=customers.objects.order_by('?').first(),
-                updated_by=User.objects.order_by('?').first()
-            )
+                owner=random.choice(customers),
+                updated_by=User.objects.first()  # Replace with actual user selection logic
+            ))
 
-        self.stdout.write(self.style.SUCCESS('Successfully generated sample data'))
+        # Create Ownership History
+        ownership_history = []
+        for tractor_detail in tractor_details:
+            ownership_history.append(OwnershipHistory.objects.create(
+                tractor=tractor_detail,
+                previous_owner=random.choice(customers),
+                new_owner=random.choice(customers),
+                change_date=fake.date_time_between(start_date='-1y', end_date='now', tzinfo=timezone.get_current_timezone()),
+                updated_by=User.objects.first()  # Replace with actual user selection logic
+            ))
+
+        self.stdout.write(self.style.SUCCESS('Successfully populated database with fake data'))
