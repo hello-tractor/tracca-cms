@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 
 # Create your models here.
 class live_tracking_data(models.Model):
+    id = models.IntegerField(primary_key=True)
     device_id = models.IntegerField()
     created_at = models.DateTimeField(default=timezone.now)
     latitude = models.FloatField(default=0.0)

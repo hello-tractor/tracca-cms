@@ -13,7 +13,7 @@ class Command(BaseCommand):
         task, created = PeriodicTask.objects.get_or_create(
             interval=schedule,
             name='Fetch and store live tracking data',
-            task='live_tracking_data.tasks.fetch_and_store_live_tracking_data',
+            task='live_tracking_data.tasks.fetch_traccar_data',
         )
 
         if created:
