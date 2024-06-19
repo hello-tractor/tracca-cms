@@ -16,3 +16,6 @@ ENV/
 # Static and Media
 staticfiles/
 media/
+
+#sensitive files
+config.py
