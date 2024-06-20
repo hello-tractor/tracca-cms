@@ -32,6 +32,7 @@ def fetch_tracca_data():
             raw_value = item['attributes'].get('io9')
             iccid1 = str(item['attributes'].get('io11') or item['attributes'].get('iccid'))
             iccid2 = str(item['attributes'].get('io14', 'N/A'))
+            fuel_frequency = item['attributes'].get('i036')
 
             timestamp = parse_datetime(item.get('fixTime'))
 
@@ -50,5 +51,6 @@ def fetch_tracca_data():
                 raw_value=raw_value,
                 sim_iccid=f"{iccid1}{iccid2}",
                 other_data=item,
-                position=f"{latitude}, {longitude}"
+                position=f"{latitude}, {longitude}",
+                fuel_frequency = fuel_frequency/1000
             )

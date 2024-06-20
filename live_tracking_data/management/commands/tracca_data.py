@@ -44,6 +44,13 @@ class Command(BaseCommand):
                 raw_value = item['attributes'].get('io9')
                 iccid1 = str(item['attributes'].get('io11') or item['attributes'].get('iccid'))
                 iccid2 = str(item['attributes'].get('io14', 'N/A'))
+                
+                # Fetch and convert fuel_frequency
+                fuel_frequency = item['attributes'].get('io36')
+                if fuel_frequency is not None:
+                    fuel_frequency = int(fuel_frequency) / 1000  # Convert to int and divide by 1000
+                else:
+                    fuel_frequency = None  # Handle case where io36 is missing or None
 
                 # Parse the timestamp
                 timestamp = parse_datetime(item.get('fixTime'))
@@ -65,7 +72,8 @@ class Command(BaseCommand):
                     raw_value=raw_value,
                     sim_iccid=f"{iccid1}{iccid2}",
                     other_data=item,
-                    position=f"{latitude}, {longitude}"
+                    position=f"{latitude}, {longitude}",
+                    fuel_frequency = fuel_frequency
                 )
             self.stdout.write(self.style.SUCCESS('Successfully fetched and stored live tracking data.'))
         else:

@@ -10,6 +10,7 @@ class live_tracking_data(models.Model):
     latitude = models.FloatField(default=0.0)
     longitude = models.FloatField(default=0.0)
     speed = models.FloatField(default=0.0)
+    fuel_frequency = models.FloatField(max_length=100, null=True, blank=True)
     position = models.CharField(max_length=255, default=0.0)
     engine_state = models.CharField(max_length=50, null=True, blank=True)
     asset_battery = models.FloatField(null=True, blank=True)
