@@ -15,7 +15,7 @@ class live_tracking_data(models.Model):
     engine_state = models.CharField(max_length=50, null=True, blank=True)
     asset_battery = models.FloatField(null=True, blank=True)
     raw_value = models.CharField(max_length=255, null=True, blank=True)
-    sim_iccid = models.CharField(max_length=50, null=True, blank=True)
+    sim_iccid = models.CharField(max_length=100, null=True, blank=True)
     other_data = models.JSONField()
 
     def __str__(self):

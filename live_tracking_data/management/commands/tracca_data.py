@@ -43,7 +43,7 @@ class Command(BaseCommand):
                 asset_battery = item['attributes'].get('power')
                 raw_value = item['attributes'].get('io9')
                 iccid1 = str(item['attributes'].get('io11') or item['attributes'].get('iccid'))
-                iccid2 = str(item['attributes'].get('io14', 'N/A'))
+                iccid2 = str(item['attributes'].get('io14'))
                 
                 # Fetch and convert fuel_frequency
                 fuel_frequency = item['attributes'].get('io36')
