@@ -3,7 +3,7 @@ from celery import shared_task
 import requests
 from requests.auth import HTTPBasicAuth
 from django.utils.dateparse import parse_datetime
-from live_tracking_data.models import live_tracking_data
+from live_tracking_data.models import live_tracking_data, Device
 from asset_tracking import config
 from django.utils import timezone
 
@@ -54,3 +54,27 @@ def fetch_tracca_data():
                 position=f"{latitude}, {longitude}",
                 fuel_frequency = fuel_frequency/1000
             )
+
+@shared_task
+def fetch_devices():
+    device_url = f'{config.BASE_URL}/api/devices'  # Replace with your actual API endpoint
+    try:
+        response = requests.get(device_url, auth=HTTPBasicAuth(config.USERNAME, config.PASSWORD))
+        response.raise_for_status()  # Raises an HTTPError if the status is 4xx or 5xx
+
+        devices = response.json()
+        unique_devices = {device['uniqueId']: device for device in devices}.values()
+
+        for device_data in unique_devices:
+            Device.objects.update_or_create(
+                unique_id=device_data['uniqueId'],
+                defaults={
+                    'name': device_data['name'],
+                    'status': device_data['status'],
+                    'last_update': device_data['lastUpdate'],
+                    'model': device_data.get('model', ''),
+                    'category': device_data.get('category', ''),
+                }
+            )
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching devices: {e}")
