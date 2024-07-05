@@ -2,8 +2,10 @@
 from django.shortcuts import render, redirect
 from .forms import DeviceForm, NewDeviceForm
 from django.http import HttpResponse
+from requests.auth import HTTPBasicAuth
 from django.conf import settings
 from asset_tracking import config
+import requests
 
 def create_device(request):
     if request.method == 'POST':
@@ -46,9 +48,9 @@ def add_new_device(request):
             headers = {
                 'Content-Type': 'application/json',
                 # Add authentication headers as required
-                'Authorization': 'Bearer {}'.format(settings.API_AUTH_TOKEN)  # Example of accessing API token from settings
+                # 'Authorization': 'Bearer {}'.format(settings.API_AUTH_TOKEN)  # Example of accessing API token from settings
             }
-            response = requests.post(api_url, json=api_data, headers=headers)
+            response = requests.post(url, auth=HTTPBasicAuth(config.USERNAME, config.PASSWORD), headers=headers)
 
             if response.status_code == 200:
                 return redirect('success')  # Redirect to success page

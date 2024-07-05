@@ -1,0 +1,19 @@
+<!-- new_device_form.html -->
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add New Device</title>
+</head>
+<body>
+    <h2>Add New Device</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        {% if error_message %}
+            <p style="color: red;">{{ error_message }}</p>
+        {% endif %}
+        <button type="submit">Submit</button>
+    </form>
+</body>
+</html>
