@@ -4,10 +4,14 @@ import requests
 from requests.auth import HTTPBasicAuth
 from django.utils.dateparse import parse_datetime
 from django.core.management.base import BaseCommand
-from live_tracking_data.models import live_tracking_data
+from live_tracking_data.models import live_tracking_data, Beacon, Device
 from asset_tracking import config
 from django.utils import timezone
 import json
+import logging
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 class Command(BaseCommand):
     help = 'Fetch live tracking data from the Traccar server and store it in the database'
@@ -59,6 +63,14 @@ class Command(BaseCommand):
                 if live_tracking_data.objects.filter(id=record_id).exists():
                     continue  # Skip if the record already exists
                 
+                # If data is missing, use the latest available data
+                if not asset_battery or not engine_state or not iccid1:
+                    latest_data = live_tracking_data.objects.filter(device_id=item['deviceId']).order_by('-created_at').first()
+                    if latest_data:
+                        asset_battery = asset_battery or latest_data.asset_battery
+                        engine_state = engine_state or latest_data.engine_state
+                        iccid1 = iccid1 or latest_data.sim_iccid
+                
                 # Save the new record to the database
                 live_tracking_data.objects.create(
                     id=record_id,  # Ensure the 'id' from the API is used as the primary key
@@ -75,6 +87,33 @@ class Command(BaseCommand):
                     position=f"{latitude}, {longitude}",
                     fuel_frequency = fuel_frequency
                 )
+                
+                # Handling beacon Data
+                for key in item['attributes']:
+                    if key.startswith('beacon') and 'Namespace' in key:
+                        beacon_index = key[len('beacon'):-len('Namespace')]
+                        namespace = item['attributes'].get(f'beacon{beacon_index}Namespace')
+                        instance = item['attributes'].get(f'beacon{beacon_index}Instance')
+                        rssi = item['attributes'].get(f'beacon{beacon_index}Rssi')
+
+                        if namespace and instance:
+                            device = Device.objects.filter(id=item['deviceId']).first()
+                            attached_to = device.device_imei if device else None
+
+                            try:
+                                Beacon.objects.update_or_create(
+                                    namespace_id=namespace,
+                                    instance_id=instance,
+                                    defaults={
+                                        'beacon_rssi': rssi,
+                                        'attached_to': attached_to,
+                                        'attached_time': timezone.now().isoformat(),
+                                        'implement': f"Implement for device {item['deviceId']}"
+                                    }
+                                )
+                            except Exception as e:
+                                logger.error(f"Error updating or creating beacon: {e}")
+
             self.stdout.write(self.style.SUCCESS('Successfully fetched and stored live tracking data.'))
         else:
             self.stdout.write(self.style.ERROR(f'Failed to fetch data: {response.status_code}'))

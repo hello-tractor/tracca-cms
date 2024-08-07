@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import live_tracking_data, Device
+from live_tracking_data.models import live_tracking_data, Device, Implement, Beacon, BeaconHistory
 from django_celery_beat.models import PeriodicTask, IntervalSchedule
 
 # Register your models here.
@@ -16,10 +16,26 @@ class DeviceAdmin(admin.ModelAdmin):
     list_filter = ('status',)
     ordering = ('-last_update',)
 
+@admin.register(Implement)
+class ImplementAdmin(admin.ModelAdmin):
+    list_display = ('brand', 'model', 'color', 'location')
+    search_fields = ('model',)
+
+@admin.register(Beacon)
+class BeaconAdmin(admin.ModelAdmin):
+    list_display = ('instance_id', 'namespace_id', 'beacon_rssi', 'attached_to', 'attached_time', 'implement')
+    search_fields = ('instance_id', 'namespace_id')
+    
+@admin.register(BeaconHistory)
+class BeaconHistoryAdmin(admin.ModelAdmin):
+    list_display = ('beacon', 'device', 'start_time')
+    readonly_fields = ('start_time',)
+    search_fields = ('beacon__instance_id', 'device__name')
+
 try:
     admin.site.unregister(PeriodicTask)
 except admin.sites.NotRegistered:
     pass  # Model was not registered
 
 # admin.site.register(PeriodicTask)
-# admin.site.register(IntervalSchedule)    
+# admin.site.register(IntervalSchedule)
