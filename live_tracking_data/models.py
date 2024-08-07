@@ -35,6 +35,9 @@ class Device(models.Model):
     contact = models.CharField(max_length=100, blank=True, null=True, default=None)
     category = models.CharField(max_length=50, null=True, blank=True)
     attributes = models.JSONField(default=dict)
+    active_beacon = models.CharField(max_length=100, null=True, blank=True)
+    active_implement = models.CharField(max_length=100, null=True, blank=True)
+    # created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.name
@@ -45,7 +48,6 @@ class NewDevice(models.Model):
     name = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
     def __str__(self):
         return self.name
     
@@ -56,6 +58,7 @@ class Implement(models.Model):
     model = models.CharField(max_length=100)
     color = models.CharField(max_length=50)
     attached_beacon_id = models.CharField(max_length=100, unique=True, null=False, default=None)
+    created_at = models.DateTimeField(max_length=100, default=timezone.now)
     location = models.CharField(max_length=100,
                                 choices=[(country_code, country_name) for country_code, country_name in (
                                     ('KE', 'Kenya'),
@@ -72,17 +75,18 @@ class Implement(models.Model):
         return self.model
     
 class Beacon(models.Model):
-    instance_id = models.CharField(max_length = 100, unique=True)
-    namespace_id = models.CharField(max_length=100)
+    instance_id = models.CharField(max_length = 100)
+    namespace_id = models.CharField(max_length=100, unique=True)
     beacon_rssi = models.CharField(max_length=50)
     attached_to = models.CharField(max_length=100)
     attached_time = models.CharField(max_length=100)
     implement = models.CharField(max_length=100)
+    created_at = models.DateField(max_length=100, default=timezone.now)
     
     def __str__(self):
         return self.instance_id
     
-class BeaconHistory(models.Model):
+class ImplementHistory(models.Model):
     beacon = models.ForeignKey(Beacon, on_delete=models.CASCADE, related_name='histories')
     device = models.ForeignKey(Device, on_delete=models.SET_NULL, null=True)
     start_time = models.DateTimeField(default=timezone.now)

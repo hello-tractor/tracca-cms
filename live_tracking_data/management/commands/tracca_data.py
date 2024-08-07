@@ -1,10 +1,8 @@
-# management/commands/fetch_tracca_data.py
-
 import requests
 from requests.auth import HTTPBasicAuth
 from django.utils.dateparse import parse_datetime
 from django.core.management.base import BaseCommand
-from live_tracking_data.models import live_tracking_data, Beacon, Device
+from live_tracking_data.models import live_tracking_data, Beacon, Device, Implement
 from asset_tracking import config
 from django.utils import timezone
 import json
@@ -98,21 +96,27 @@ class Command(BaseCommand):
 
                         if namespace and instance:
                             device = Device.objects.filter(id=item['deviceId']).first()
-                            attached_to = device.device_imei if device else None
+                            if device:
+                                attached_to = device.device_imei
+                                
+                                # Fetch the Implement associated with the device
+                                implement = Implement.objects.filter(serial_number=device.position_id).first()
 
-                            try:
-                                Beacon.objects.update_or_create(
-                                    namespace_id=namespace,
-                                    instance_id=instance,
-                                    defaults={
-                                        'beacon_rssi': rssi,
-                                        'attached_to': attached_to,
-                                        'attached_time': timezone.now().isoformat(),
-                                        'implement': f"Implement for device {item['deviceId']}"
-                                    }
-                                )
-                            except Exception as e:
-                                logger.error(f"Error updating or creating beacon: {e}")
+                                implement_serial = implement.serial_number if implement else "Unknown"
+                                
+                                try:
+                                    Beacon.objects.update_or_create(
+                                        namespace_id=namespace,
+                                        instance_id=instance,
+                                        defaults={
+                                            'beacon_rssi': rssi,
+                                            'attached_to': attached_to,
+                                            'attached_time': timezone.now().isoformat(),
+                                            'implement': implement_serial
+                                        }
+                                    )
+                                except Exception as e:
+                                    logger.error(f"Error updating or creating beacon: {e}")
 
             self.stdout.write(self.style.SUCCESS('Successfully fetched and stored live tracking data.'))
         else:
