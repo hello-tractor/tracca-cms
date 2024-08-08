@@ -48,16 +48,27 @@ class NewDevice(models.Model):
     name = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
     def __str__(self):
         return self.name
     
+class Beacon(models.Model):
+    namespace_id = models.CharField(max_length=100, unique=True)
+    instance_id = models.CharField(max_length=100)
+    beacon_rssi = models.CharField(max_length=100, null=True, blank=True)
+    attached_to = models.CharField(max_length=100, null=True, blank=True)
+    attached_time = models.CharField(max_length=100, null=True, blank=True)
+    created_at = models.DateField(default=timezone.now)
     
+    def __str__(self):
+        return self.namespace_id   
+
 class Implement(models.Model):
     serial_number = models.CharField(max_length=100, primary_key=True, blank=False, default=None)
     brand = models.CharField(max_length=100)
     model = models.CharField(max_length=100)
     color = models.CharField(max_length=50)
-    attached_beacon_id = models.CharField(max_length=100, unique=True, null=False, default=None)
+    attached_beacon_id = models.ForeignKey(Beacon, on_delete=models.CASCADE, related_name='implements', unique=True)
     created_at = models.DateTimeField(max_length=100, default=timezone.now)
     location = models.CharField(max_length=100,
                                 choices=[(country_code, country_name) for country_code, country_name in (
@@ -73,18 +84,6 @@ class Implement(models.Model):
 
     def __str__(self):
         return self.model
-    
-class Beacon(models.Model):
-    namespace_id = models.CharField(max_length=100, unique=True)
-    instance_id = models.CharField(max_length=100)
-    beacon_rssi = models.CharField(max_length=100, null=True, blank=True)
-    attached_to = models.CharField(max_length=100, null=True, blank=True)
-    attached_time = models.CharField(max_length=100, null=True, blank=True)
-    implement = models.CharField(max_length=100, null=True, blank=True)
-    created_at = models.DateField(default=timezone.now)
-
-    def __str__(self):
-        return self.instance_id
     
 class ImplementHistory(models.Model):
     beacon = models.ForeignKey(Beacon, on_delete=models.CASCADE)

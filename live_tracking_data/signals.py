@@ -5,11 +5,11 @@ from .models import Beacon, ImplementHistory, Device
 @receiver(post_save, sender=Beacon)
 def create_or_update_beacon_history(sender, instance, **kwargs):
     try:
-        current_device = Device.objects.get(id=instance.device_id)  # Fetch the current device
+        current_device = Device.objects.get(device_imei=instance.attached_to)  # Fetch the current device using attached_to
     except Device.DoesNotExist:
         return  # Handle the case where the device is not found
 
-    # Check if there's an existing BeaconHistory record for this beacon and device
+    # Check if there's an existing ImplementHistory record for this beacon and device
     history, created = ImplementHistory.objects.get_or_create(
         beacon=instance,
         defaults={'device': current_device, 'start_time': instance.attached_time}

@@ -21,15 +21,13 @@ class Command(BaseCommand):
         latest_record = live_tracking_data.objects.order_by('-created_at').first()
         latest_timestamp = latest_record.created_at if latest_record else None
         
-        # Set the API parameters to fetch data since the latest timestamp
         params = {}
         if latest_timestamp:
             params['from'] = latest_timestamp.isoformat()
         
-        # Send the request to the Traccar API
+        # API Request
         response = requests.get(traccar_url, auth=HTTPBasicAuth(config.USERNAME, config.PASSWORD), params=params)
 
-        # Check if the request was successful
         if response.status_code == 200:
             data = response.json()
 
@@ -104,6 +102,7 @@ class Command(BaseCommand):
                     logger.error(f"Error saving record with id={record_id}: {e}")
 
                 # Handling beacon data
+                beacon_data = []
                 for key in item['attributes']:
                     if key.startswith('beacon') and 'Namespace' in key:
                         beacon_index = key[len('beacon'):-len('Namespace')]
@@ -112,30 +111,48 @@ class Command(BaseCommand):
                         rssi = item['attributes'].get(f'beacon{beacon_index}Rssi')
 
                         if namespace and instance:
-                            device = Device.objects.filter(id=item['deviceId']).first()
-                            if device:
-                                attached_to = device.device_imei
-
-                                # Fetch the Implement associated with the device
-                                implement = Implement.objects.filter(serial_number=device.position_id).first()
-                                implement_serial = implement.serial_number if implement else "Unknown"
-
-                                try:
-                                    Beacon.objects.update_or_create(
-                                        namespace_id=namespace,
-                                        instance_id=instance,
-                                        defaults={
-                                            'beacon_rssi': rssi,
-                                            'attached_to': attached_to,
-                                            'attached_time': timezone.now(),
-                                            'implement': implement_serial,
-                                            'created_at': timezone.now().date(),
-                                        }
-                                    )
-                                except Exception as e:
-                                    logger.error(f"Error updating or creating beacon: {e}")
+                            try:
+                                beacon, created = Beacon.objects.get_or_create(
+                                    namespace_id=namespace,
+                                    defaults={
+                                        'instance_id': instance,
+                                        'beacon_rssi': rssi,
+                                        'attached_to': Device.objects.filter(id=item['deviceId']).first().device_imei if Device.objects.filter(id=item['deviceId']).exists() else None,
+                                        'attached_time': timezone.now(),
+                                    }
+                                )
+                                if not created:
+                                    beacon.instance_id = instance
+                                    beacon.beacon_rssi = rssi
+                                    beacon.attached_to = Device.objects.filter(id=item['deviceId']).first().device_imei if Device.objects.filter(id=item['deviceId']).exists() else None
+                                    beacon.attached_time = timezone.now()
+                                    beacon.save()
+                                
+                                # Append the beacons to the list
+                                beacon_data.append((beacon, rssi))
+                            except Exception as e:
+                                logger.error(f"Error updating or creating beacon: {e}")
                         else:
                             logger.warning(f"Invalid namespace or instance for beacon {key}. Skipping.")
+                            
+                if beacon_data:
+                    beacon_data.sort(key=lambda x: x[1])  # Sort by RSSI value
+                    active_beacon, _ = beacon_data[-1]  # Beacon with the least RSSI
+
+                    # Update the device with the active beacon namespace_id
+                    device = Device.objects.filter(id=item['deviceId']).first()
+                    if device:
+                        try:
+                            device.active_beacon = active_beacon.namespace_id
+                            
+                            # Find the implement associated with the active beacon
+                            implement = Implement.objects.filter(attached_beacon_id=active_beacon).first()
+                            if implement:
+                                device.active_implement = implement.serial_number
+                            
+                            device.save()
+                        except Exception as e:
+                            logger.error(f"Error updating device or implement: {e}")
 
             self.stdout.write(self.style.SUCCESS('Successfully fetched and stored live tracking data.'))
         else:

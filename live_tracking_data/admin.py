@@ -3,9 +3,9 @@ from live_tracking_data.models import live_tracking_data, Device, Implement, Bea
 from django_celery_beat.models import PeriodicTask, IntervalSchedule
 
 class MyAdminSite(admin.AdminSite):
-    site_header = 'My Company Name'  # The header displayed on the admin pages
-    site_title = 'My Company Admin'  # The title displayed in the browser tab
-    index_title = 'Welcome to My Company Admin'  # The title displayed on the admin index page
+    site_header = 'Hello Trcator'  # The header displayed on the admin pages
+    site_title = 'Hello Trcator Admin'  # The title displayed in the browser tab
+    index_title = 'Welcome to Hello Trcator admin'  # The title displayed on the admin index page
 
 admin_site = MyAdminSite(name='myadmin')
 
@@ -34,24 +34,17 @@ class DeviceAdmin(admin.ModelAdmin):
 
 @admin.register(Implement)
 class ImplementAdmin(admin.ModelAdmin):
-    list_display = ('serial_number', 'brand', 'model', 'color', 'location', 'created_at')
-    search_fields = ('model',)
+    list_display = ('serial_number', 'created_at', 'brand', 'model', 'color', 'location', 'attached_beacon_id')
+    search_fields = ('serial_number', 'attached-beacon_id')
 
 @admin.register(Beacon)
 class BeaconAdmin(admin.ModelAdmin):
-    list_display = ('namespace_id', 'instance_id', 'beacon_rssi', 'attached_to', 'attached_time', 'implement', 'created_at')
+    list_display = ('namespace_id', 'instance_id', 'beacon_rssi', 'attached_to', 'attached_time', 'created_at')
     search_fields = ('instance_id', 'namespace_id')
     
 @admin.register(ImplementHistory)
 class ImplementHistoryAdmin(admin.ModelAdmin):
     list_display = ('beacon', 'device', 'start_time')
     readonly_fields = ('start_time',)
-    search_fields = ('beacon__instance_id', 'device__name')
+    search_fields = ('beacon', 'device')
 
-try:
-    admin.site.unregister(PeriodicTask)
-except admin.sites.NotRegistered:
-    pass  # Model was not registered
-
-# admin.site.register(PeriodicTask)
-# admin.site.register(IntervalSchedule)
