@@ -68,7 +68,7 @@ class Implement(models.Model):
     brand = models.CharField(max_length=100)
     model = models.CharField(max_length=100)
     color = models.CharField(max_length=50)
-    attached_beacon_id = models.ForeignKey(Beacon, on_delete=models.CASCADE, related_name='implements', unique=True)
+    attached_beacon_id = models.OneToOneField(Beacon, on_delete=models.CASCADE, related_name='implement')
     created_at = models.DateTimeField(max_length=100, default=timezone.now)
     location = models.CharField(max_length=100,
                                 choices=[(country_code, country_name) for country_code, country_name in (

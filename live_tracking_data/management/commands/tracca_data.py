@@ -111,6 +111,9 @@ class Command(BaseCommand):
                         rssi = item['attributes'].get(f'beacon{beacon_index}Rssi')
 
                         if namespace and instance:
+                            namespace = namespace.upper()  # Convert to uppercase
+                            instance = instance.upper()    # Convert to uppercase
+                            
                             try:
                                 beacon, created = Beacon.objects.get_or_create(
                                     namespace_id=namespace,
@@ -137,7 +140,7 @@ class Command(BaseCommand):
                             
                 if beacon_data:
                     beacon_data.sort(key=lambda x: x[1])  # Sort by RSSI value
-                    active_beacon, _ = beacon_data[-1]  # Beacon with the least RSSI
+                    active_beacon, _ = beacon_data[-1]  # Beacon with the least RSSI/This is not an absolute value FYI
 
                     # Update the device with the active beacon namespace_id
                     device = Device.objects.filter(id=item['deviceId']).first()
