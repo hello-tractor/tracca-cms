@@ -34,59 +34,76 @@ class Command(BaseCommand):
             data = response.json()
 
             # Print the response data for debugging
-            print(json.dumps(data, indent=2))
+            logger.debug("API response data: %s", json.dumps(data, indent=2))
             
             for item in data:
                 # Extract necessary fields
-                record_id = item['id']
+                record_id = item.get('id')
                 latitude = item.get('latitude')
                 longitude = item.get('longitude')
                 engine_state = item['attributes'].get('ignition')
                 asset_battery = item['attributes'].get('power')
                 raw_value = item['attributes'].get('io9')
-                iccid1 = str(item['attributes'].get('io11') or item['attributes'].get('iccid'))
-                iccid2 = str(item['attributes'].get('io14'))
-                
+                iccid1 = str(item['attributes'].get('io11') or item['attributes'].get('iccid') or '')
+                iccid2 = str(item['attributes'].get('io14') or '')
+
+                # Log extracted ICCID values
+                logger.debug(f"Extracted ICCID values: iccid1={iccid1}, iccid2={iccid2}")
+
                 # Fetch and convert fuel_frequency
                 fuel_frequency = item['attributes'].get('io36')
                 if fuel_frequency is not None:
-                    fuel_frequency = int(fuel_frequency) / 1000  # Convert to int and divide by 1000
+                    try:
+                        fuel_frequency = int(fuel_frequency) / 1000  # Convert to int and divide by 1000
+                    except ValueError:
+                        logger.warning(f"Invalid fuel_frequency value: {fuel_frequency}. Setting to None.")
+                        fuel_frequency = None
                 else:
-                    fuel_frequency = None  # Handle case where io36 is missing or None
+                    fuel_frequency = None
 
                 # Parse the timestamp
                 timestamp = parse_datetime(item.get('fixTime'))
+                if not timestamp:
+                    logger.warning(f"Invalid timestamp format for record_id={record_id}. Skipping record.")
+                    continue
 
                 # Check if the record already exists using the 'id' key
                 if live_tracking_data.objects.filter(id=record_id).exists():
-                    continue  # Skip if the record already exists
+                    logger.info(f"Record with id={record_id} already exists. Skipping.")
+                    continue
                 
                 # If data is missing, use the latest available data
-                if not asset_battery or not engine_state or not iccid1:
+                if not asset_battery or not engine_state or not iccid1 or not iccid2:
                     latest_data = live_tracking_data.objects.filter(device_id=item['deviceId']).order_by('-created_at').first()
                     if latest_data:
                         asset_battery = asset_battery or latest_data.asset_battery
                         engine_state = engine_state or latest_data.engine_state
                         iccid1 = iccid1 or latest_data.sim_iccid
-                
+
+                # Log final values before saving
+                logger.debug(f"Final values for record_id={record_id}: asset_battery={asset_battery}, engine_state={engine_state}, iccid1={iccid1}")
+
                 # Save the new record to the database
-                live_tracking_data.objects.create(
-                    id=record_id,  # Ensure the 'id' from the API is used as the primary key
-                    device_id=item['deviceId'],
-                    created_at=timestamp,
-                    latitude=latitude,
-                    longitude=longitude,
-                    speed=item.get('speed'),
-                    engine_state=engine_state,
-                    asset_battery=asset_battery,
-                    raw_value=raw_value,
-                    sim_iccid=f"{iccid1}{iccid2}",
-                    other_data=item,
-                    position=f"{latitude}, {longitude}",
-                    fuel_frequency = fuel_frequency
-                )
-                
-                # Handling beacon Data
+                try:
+                    live_tracking_data.objects.create(
+                        id=record_id, 
+                        device_id=item['deviceId'],
+                        created_at=timestamp,
+                        latitude=latitude,
+                        longitude=longitude,
+                        speed=item.get('speed'),
+                        engine_state=engine_state,
+                        asset_battery=asset_battery,
+                        raw_value=raw_value,
+                        sim_iccid=f"{iccid1}{iccid2}",
+                        other_data=item,
+                        position=f"{latitude}, {longitude}",
+                        fuel_frequency=fuel_frequency
+                    )
+                except Exception as e:
+                    logger.error(f"Error saving record with id={record_id}: {e}")
+
+                # Handling beacon data
                 for key in item['attributes']:
                     if key.startswith('beacon') and 'Namespace' in key:
                         beacon_index = key[len('beacon'):-len('Namespace')]
@@ -98,12 +115,11 @@ class Command(BaseCommand):
                             device = Device.objects.filter(id=item['deviceId']).first()
                             if device:
                                 attached_to = device.device_imei
-                                
+
                                 # Fetch the Implement associated with the device
                                 implement = Implement.objects.filter(serial_number=device.position_id).first()
-
                                 implement_serial = implement.serial_number if implement else "Unknown"
-                                
+
                                 try:
                                     Beacon.objects.update_or_create(
                                         namespace_id=namespace,
@@ -111,12 +127,15 @@ class Command(BaseCommand):
                                         defaults={
                                             'beacon_rssi': rssi,
                                             'attached_to': attached_to,
-                                            'attached_time': timezone.now().isoformat(),
-                                            'implement': implement_serial
+                                            'attached_time': timezone.now(),
+                                            'implement': implement_serial,
+                                            'created_at': timezone.now().date(),
                                         }
                                     )
                                 except Exception as e:
                                     logger.error(f"Error updating or creating beacon: {e}")
+                        else:
+                            logger.warning(f"Invalid namespace or instance for beacon {key}. Skipping.")
 
             self.stdout.write(self.style.SUCCESS('Successfully fetched and stored live tracking data.'))
         else:

@@ -13,7 +13,7 @@ admin_site = MyAdminSite(name='myadmin')
 @admin.register(live_tracking_data)
 class RawDeviceDataAdmin(admin.ModelAdmin):
     list_display = ('id', 'device_id', 'created_at', 'position', 'engine_state', 'asset_battery', 'raw_value', 'fuel_frequency', 'sim_iccid', 'speed')
-    search_fields = ('device_id',)
+    search_fields = ('id', 'device_id',)
     list_filter = ('created_at',)
 
 @admin.register(Device)
@@ -39,7 +39,7 @@ class ImplementAdmin(admin.ModelAdmin):
 
 @admin.register(Beacon)
 class BeaconAdmin(admin.ModelAdmin):
-    list_display = ('instance_id', 'namespace_id', 'beacon_rssi', 'attached_to', 'attached_time', 'implement', 'created_at')
+    list_display = ('namespace_id', 'instance_id', 'beacon_rssi', 'attached_to', 'attached_time', 'implement', 'created_at')
     search_fields = ('instance_id', 'namespace_id')
     
 @admin.register(ImplementHistory)

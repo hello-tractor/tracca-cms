@@ -75,26 +75,21 @@ class Implement(models.Model):
         return self.model
     
 class Beacon(models.Model):
-    instance_id = models.CharField(max_length = 100)
     namespace_id = models.CharField(max_length=100, unique=True)
-    beacon_rssi = models.CharField(max_length=50)
-    attached_to = models.CharField(max_length=100)
-    attached_time = models.CharField(max_length=100)
-    implement = models.CharField(max_length=100)
-    created_at = models.DateField(max_length=100, default=timezone.now)
-    
+    instance_id = models.CharField(max_length=100)
+    beacon_rssi = models.CharField(max_length=100, null=True, blank=True)
+    attached_to = models.CharField(max_length=100, null=True, blank=True)
+    attached_time = models.CharField(max_length=100, null=True, blank=True)
+    implement = models.CharField(max_length=100, null=True, blank=True)
+    created_at = models.DateField(default=timezone.now)
+
     def __str__(self):
         return self.instance_id
     
 class ImplementHistory(models.Model):
-    beacon = models.ForeignKey(Beacon, on_delete=models.CASCADE, related_name='histories')
+    beacon = models.ForeignKey(Beacon, on_delete=models.CASCADE)
     device = models.ForeignKey(Device, on_delete=models.SET_NULL, null=True)
-    start_time = models.DateTimeField(default=timezone.now)
+    start_time = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
         return f"Beacon {self.beacon.instance_id} - Device {self.device.id} from {self.start_time}"
-    
-    def get_duration(self):
-        # if self.end_time and self.start_time:
-        #     return self.end_time - self.start_time
-        return None
