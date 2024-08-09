@@ -97,7 +97,7 @@ class Implement(models.Model):
                                 default='KE')
 
     def __str__(self):
-        return self.model
+        return self.serial_number
 
 class ImplementHistory(models.Model):
     implement_serial = models.ForeignKey(Implement, on_delete=models.CASCADE, related_name='history')
