@@ -1,23 +1,36 @@
 from django.db.models.signals import post_save
+from django.utils import timezone
 from django.dispatch import receiver
-from .models import Beacon, ImplementHistory, Device
+from .models import Device, Implement, ImplementHistory
 
-@receiver(post_save, sender=Beacon)
-def create_or_update_beacon_history(sender, instance, **kwargs):
-    try:
-        current_device = Device.objects.get(device_imei=instance.attached_to)  # Fetch the current device using attached_to
-    except Device.DoesNotExist:
-        return  # Handle the case where the device is not found
+@receiver(post_save, sender=Device)
+def update_implement_history(sender, instance, **kwargs):
+    if instance.active_implement:
+        try:
+            implement = Implement.objects.get(serial_number=instance.active_implement)
+        except Implement.DoesNotExist:
+            return
 
-    # Check if there's an existing ImplementHistory record for this beacon and device
-    history, created = ImplementHistory.objects.get_or_create(
-        beacon=instance,
-        defaults={'device': current_device, 'start_time': instance.attached_time}
-    )
+        # Check for the current history record
+        current_history = ImplementHistory.objects.filter(
+            implement_serial=implement,
+            current_device=instance
+        ).last()
 
-    if not created:
-        # If the record already exists, check if the device has changed
-        if history.device != current_device:
-            history.device = current_device
-            history.start_time = instance.attached_time  # Reset start time
-            history.save()
+        if current_history and current_history.current_device == instance:
+            # Update the end_date if the implement is still with the same device
+            current_history.end_date = None
+            current_history.save()
+        else:
+            # Close the current history record if it exists and the device has changed
+            if current_history:
+                current_history.end_date = timezone.now()
+                current_history.save()
+
+            # Create a new history record
+            ImplementHistory.objects.create(
+                implement_serial=implement,
+                initial_device=instance,
+                current_device=instance,
+                start_date=timezone.now(),
+            )

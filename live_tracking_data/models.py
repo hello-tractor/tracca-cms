@@ -1,8 +1,7 @@
 from django.db import models
 from django.utils import timezone
-from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 
-# Create your models here.
 class live_tracking_data(models.Model):
     id = models.IntegerField(primary_key=True)
     device_id = models.IntegerField()
@@ -20,11 +19,11 @@ class live_tracking_data(models.Model):
 
     def __str__(self):
         return f"Device {self.device_id} - {self.latitude}, {self.longitude}"
-    
+
 class Device(models.Model):
-    id = models.IntegerField(primary_key=True)  # Assuming 'id' is the primary key
+    id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=100)
-    device_imei = models.CharField(max_length=50, unique=True)  # Unique ID as per your requirements
+    device_imei = models.CharField(max_length=50, unique=True)
     status = models.CharField(max_length=50)
     disabled = models.BooleanField(default=False)
     last_update = models.DateTimeField()
@@ -37,21 +36,37 @@ class Device(models.Model):
     attributes = models.JSONField(default=dict)
     active_beacon = models.CharField(max_length=100, null=True, blank=True)
     active_implement = models.CharField(max_length=100, null=True, blank=True)
-    # created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.device_imei
+
+class ImplementBrand(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=100, unique=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    def clean(self):
+        if ImplementBrand.objects.filter(name__iexact=self.name).exists():
+            raise ValidationError(f"A brand with the name '{self.name}' already exists.")
+
+    def save(self, *args, **kwargs):
+        self.name = self.name.title()
+        self.clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
-    
+
 class NewDevice(models.Model):
     device_id = models.CharField(max_length=100, unique=True)
     unique_id = models.CharField(max_length=100, unique=True)
     name = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     def __str__(self):
         return self.name
-    
+
 class Beacon(models.Model):
     namespace_id = models.CharField(max_length=100, unique=True)
     instance_id = models.CharField(max_length=100)
@@ -59,13 +74,13 @@ class Beacon(models.Model):
     attached_to = models.CharField(max_length=100, null=True, blank=True)
     attached_time = models.CharField(max_length=100, null=True, blank=True)
     created_at = models.DateField(default=timezone.now)
-    
+
     def __str__(self):
-        return self.namespace_id   
+        return self.namespace_id
 
 class Implement(models.Model):
     serial_number = models.CharField(max_length=100, primary_key=True, blank=False, default=None)
-    brand = models.CharField(max_length=100)
+    brand = models.ForeignKey(ImplementBrand, on_delete=models.CASCADE)
     model = models.CharField(max_length=100)
     color = models.CharField(max_length=50)
     attached_beacon_id = models.OneToOneField(Beacon, on_delete=models.CASCADE, related_name='implement')
@@ -79,16 +94,29 @@ class Implement(models.Model):
                                     ('ET', 'Ethiopia'),
                                     ('TZ', 'Tanzania'),
                                     )],
-                                default='KE',  # Default country
-                                )
+                                default='KE')
 
     def __str__(self):
         return self.model
-    
+
 class ImplementHistory(models.Model):
-    beacon = models.ForeignKey(Beacon, on_delete=models.CASCADE)
-    device = models.ForeignKey(Device, on_delete=models.SET_NULL, null=True)
-    start_time = models.DateTimeField(auto_now_add=True)
-    
+    implement_serial = models.ForeignKey(Implement, on_delete=models.CASCADE, related_name='history')
+    initial_device = models.ForeignKey(Device, related_name='initial_implements', on_delete=models.SET_NULL, null=True)
+    current_device = models.ForeignKey(Device, related_name='current_implements', on_delete=models.SET_NULL, null=True)
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField(null=True, blank=True)
+    days_used = models.IntegerField(null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if self.end_date:
+            self.days_used = (self.end_date - self.start_date).days
+        else:
+            self.days_used = None
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return f"Beacon {self.beacon.instance_id} - Device {self.device.id} from {self.start_time}"
+        return f"{self.implement_serial.serial_number} history"
+
+    class Meta:
+        unique_together = ('implement_serial', 'start_date')
+

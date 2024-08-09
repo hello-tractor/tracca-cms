@@ -1,5 +1,5 @@
 from django.contrib import admin
-from live_tracking_data.models import live_tracking_data, Device, Implement, Beacon, ImplementHistory
+from live_tracking_data.models import live_tracking_data, Device, Implement, Beacon, ImplementHistory, ImplementBrand
 from django_celery_beat.models import PeriodicTask, IntervalSchedule
 
 class MyAdminSite(admin.AdminSite):
@@ -44,7 +44,11 @@ class BeaconAdmin(admin.ModelAdmin):
     
 @admin.register(ImplementHistory)
 class ImplementHistoryAdmin(admin.ModelAdmin):
-    list_display = ('beacon', 'device', 'start_time')
-    readonly_fields = ('start_time',)
-    search_fields = ('beacon', 'device')
+    list_display = ('implement_serial', 'initial_device', 'current_device', 'start_date', 'end_date', 'days_used')
+    search_fields=('implement_serial', 'initial_device', 'current_device')
 
+
+@admin.register(ImplementBrand)
+class ImplementBrandAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'created_at')
+    search_fields = ('name',)
