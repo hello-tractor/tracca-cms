@@ -16,6 +16,7 @@ class Command(BaseCommand):
             response.raise_for_status()  # Raises an HTTPError if the status is 4xx or 5xx
 
             # Log the response status code and content for debugging
+            #Just an additiona comment here
             self.stdout.write(self.style.NOTICE(f"Response Status Code: {response.status_code}"))
             self.stdout.write(self.style.NOTICE(f"Response Content: {response.content.decode('utf-8')}"))
 
