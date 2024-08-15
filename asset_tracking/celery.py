@@ -5,7 +5,7 @@ from django.conf import settings
 from datetime import timedelta
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'asset_tracking.settings')
-app = Celery('asset_tracking')
+app = Celery('live_tracking_data')
 app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)
 

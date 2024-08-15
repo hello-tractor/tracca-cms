@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-ksx+mb@zasz^qj(%etlz+%d_scu^h-r-bgxs_m57r7fd^vgz7p
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]']
 
 
 # Application definition
@@ -52,7 +52,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'tracker.middleware.CurrentUserMiddleware',
+    # 'tracker.middleware.CurrentUserMiddleware',
 ]
 
 ROOT_URLCONF = 'asset_tracking.urls'
