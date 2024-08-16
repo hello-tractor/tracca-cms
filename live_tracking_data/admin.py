@@ -1,6 +1,7 @@
 from django.contrib import admin
 from live_tracking_data.models import live_tracking_data, Device, Implement, Beacon, ImplementHistory, ImplementBrand
 from django_celery_beat.models import PeriodicTask, IntervalSchedule
+from django.contrib.admin import AdminSite
 
 class MyAdminSite(admin.AdminSite):
     site_header = 'Hello Trcator'  # The header displayed on the admin pages
