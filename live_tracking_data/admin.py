@@ -1,5 +1,5 @@
 from django.contrib import admin
-from live_tracking_data.models import live_tracking_data, Device, Implement, Beacon, ImplementHistory, ImplementBrand
+from live_tracking_data.models import live_tracking_data, Device, Implement, Beacon, ImplementHistory, ImplementBrand, Hub, HubImplement
 from django_celery_beat.models import PeriodicTask, IntervalSchedule
 from django.contrib.admin import AdminSite
 
@@ -53,3 +53,13 @@ class ImplementHistoryAdmin(admin.ModelAdmin):
 class ImplementBrandAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'created_at')
     search_fields = ('name',)
+
+@admin.register(Hub)
+class HubAdmin(admin.ModelAdmin):
+    list_display = ('id', 'hub_name', 'hub_location', 'hub_device_imei', 'created_at')
+    search_fields = ('device_imei', 'hub_name')
+
+@admin.register(HubImplement)
+class HubImplemendAdmin(admin.ModelAdmin):
+    list_display = ('hub_implement_serial', 'implement_type', 'attached_beacon', 'hub_name', 'created_at')
+    search_fields = ('implement_serial', 'hub_name')

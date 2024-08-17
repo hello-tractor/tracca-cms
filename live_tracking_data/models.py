@@ -3,13 +3,13 @@ from django.utils import timezone
 from django.core.exceptions import ValidationError
 
 class live_tracking_data(models.Model):
-    id = models.IntegerField(primary_key=True)
+    id = models.IntegerField(primary_key=True, editable=False)
     device_id = models.IntegerField()
     created_at = models.DateTimeField(default=timezone.now)
     latitude = models.FloatField(default=0.0)
     longitude = models.FloatField(default=0.0)
     speed = models.FloatField(default=0.0)
-    fuel_frequency = models.FloatField(max_length=100, null=True, blank=True)
+    fuel_frequency = models.FloatField(null=True, blank=True)  # Removed max_length
     position = models.CharField(max_length=255, default=0.0)
     engine_state = models.CharField(max_length=50, null=True, blank=True)
     asset_battery = models.FloatField(null=True, blank=True)
@@ -86,21 +86,21 @@ class Implement(models.Model):
     attached_beacon_id = models.OneToOneField(Beacon, on_delete=models.CASCADE, related_name='implement')
     created_at = models.DateTimeField(max_length=100, default=timezone.now)
     location = models.CharField(max_length=100,
-                                choices=[(country_code, country_name) for country_code, country_name in (
+                                choices=[(code, name) for code, name in (
                                     ('KE', 'Kenya'),
                                     ('RW', 'Rwanda'),
                                     ('UG', 'Uganda'),
                                     ('NG', 'Nigeria'),
                                     ('ET', 'Ethiopia'),
                                     ('TZ', 'Tanzania'),
-                                    )],
+                                )],
                                 default='KE')
 
     def __str__(self):
         return self.serial_number
 
 class ImplementHistory(models.Model):
-    implement_serial = models.ForeignKey(Implement, on_delete=models.CASCADE, related_name='history')
+    implement_serial = models.ForeignKey(Implement, on_delete=models.CASCADE, related_name='history_records')  # Changed related_name
     initial_device = models.ForeignKey(Device, related_name='initial_implements', on_delete=models.SET_NULL, null=True)
     current_device = models.ForeignKey(Device, related_name='current_implements', on_delete=models.SET_NULL, null=True)
     start_date = models.DateTimeField()
@@ -120,3 +120,28 @@ class ImplementHistory(models.Model):
     class Meta:
         unique_together = ('implement_serial', 'start_date')
 
+class Hub(models.Model):
+    id = models.AutoField(primary_key=True)
+    hub_device_imei = models.OneToOneField(Device, on_delete=models.CASCADE, related_name='hubs')
+    hub_name = models.CharField(max_length=100, null=False, blank=False)
+    created_at = models.DateTimeField(max_length=100, default=timezone.now)
+    hub_location = models.CharField(max_length=100,
+                                    choices=[(loc, loc) for loc in (
+                                        'Kisumu',
+                                        'Nakuru',
+                                        'Nairobi',
+                                    )],
+                                    default='Kisumu')
+
+    def __str__(self):
+        return self.hub_name
+
+class HubImplement(models.Model):
+    hub_implement_serial = models.ForeignKey(Implement, on_delete=models.CASCADE, related_name='hub_history')
+    implement_type = models.CharField(max_length=100, null=False, blank=False)
+    attached_beacon = models.OneToOneField(Beacon, on_delete=models.CASCADE, related_name='hub_implement')
+    hub_name = models.ForeignKey(Hub, on_delete=models.CASCADE, related_name='hub_implements')
+    created_at = models.DateTimeField(max_length=100, default=timezone.now)
+
+    def __str__(self):
+        return f"Implement {self.hub_implement_serial.serial_number} - {self.hub_name}"
