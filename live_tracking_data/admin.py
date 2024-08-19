@@ -37,6 +37,7 @@ class DeviceAdmin(admin.ModelAdmin):
 class ImplementAdmin(admin.ModelAdmin):
     list_display = ('serial_number', 'created_at', 'brand', 'model', 'color', 'location', 'attached_beacon_id')
     search_fields = ('serial_number', 'attached-beacon_id')
+    # raw_id_fields = ('attached_beacon_id')
 
 @admin.register(Beacon)
 class BeaconAdmin(admin.ModelAdmin):
