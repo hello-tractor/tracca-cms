@@ -145,3 +145,35 @@ class HubImplement(models.Model):
 
     def __str__(self):
         return f"Implement {self.hub_implement_serial.serial_number} - {self.hub_name}"
+
+class FuelCalibrationResult(models.Model):
+    device = models.ForeignKey(Device, related_name='calibration_results', on_delete=models.CASCADE)
+    fuel_in_litre = models.FloatField()
+    raw_fuel_value = models.FloatField()
+    created_at = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"Calibration for {self.device.name} - {self.fuel_in_litre}L: {self.raw_fuel_value}"
+
+class RealTimeFuelValue(models.Model):
+    device = models.ForeignKey(Device, related_name='real_time_fuel_values', on_delete=models.CASCADE)
+    computed_value = models.FloatField()
+    created_at = models.DateTimeField(default=timezone.now)
+
+    def compute_fuel_value(self):
+        calibration_results = self.device.calibration_results.all()
+        if calibration_results.exists():
+            # Use linear regression or similar method to compute the value
+            # For simplicity, we'll just average the values here
+            total_fuel = sum([res.fuel_in_litre for res in calibration_results])
+            total_value = sum([res.raw_fuel_value for res in calibration_results])
+            self.computed_value = total_value / total_fuel  # Replace with actual computation
+        else:
+            raise ValidationError("No calibration data available for this device.")
+
+    def save(self, *args, **kwargs):
+        self.compute_fuel_value()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Real-time Fuel Value for {self.device.name}: {self.computed_value}"

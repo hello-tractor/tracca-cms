@@ -1,5 +1,6 @@
 from django.contrib import admin
-from live_tracking_data.models import live_tracking_data, Device, Implement, Beacon, ImplementHistory, ImplementBrand, Hub, HubImplement
+from live_tracking_data.models import live_tracking_data, Device, Implement, Beacon, ImplementHistory, ImplementBrand, Hub, HubImplement, FuelCalibrationResult, RealTimeFuelValue
+from django.utils.html import format_html
 from django_celery_beat.models import PeriodicTask, IntervalSchedule
 from django.contrib.admin import AdminSite
 
@@ -37,7 +38,6 @@ class DeviceAdmin(admin.ModelAdmin):
 class ImplementAdmin(admin.ModelAdmin):
     list_display = ('serial_number', 'created_at', 'brand', 'model', 'color', 'location', 'attached_beacon_id')
     search_fields = ('serial_number', 'attached-beacon_id')
-    # raw_id_fields = ('attached_beacon_id')
 
 @admin.register(Beacon)
 class BeaconAdmin(admin.ModelAdmin):
@@ -64,3 +64,14 @@ class HubAdmin(admin.ModelAdmin):
 class HubImplemendAdmin(admin.ModelAdmin):
     list_display = ('hub_implement_serial', 'implement_type', 'attached_beacon', 'hub_name', 'created_at')
     search_fields = ('implement_serial', 'hub_name')
+
+class FuelCalibrationResultInline(admin.TabularInline):
+    model = FuelCalibrationResult
+    extra = 1  # Show one additional empty form
+    min_num = 1  # Minimum one calibration point
+    can_delete = True
+    
+@admin.register(RealTimeFuelValue)
+class RealTimeFuelValueAdmin(admin.ModelAdmin):
+    list_display = ('device', 'computed_value', 'created_at')
+    search_fields = ('device__name', 'computed_value')

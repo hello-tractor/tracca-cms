@@ -2,7 +2,7 @@ import requests
 from requests.auth import HTTPBasicAuth
 from django.utils.dateparse import parse_datetime
 from django.core.management.base import BaseCommand
-from live_tracking_data.models import live_tracking_data, Beacon, Device, Implement
+from live_tracking_data.models import live_tracking_data, Beacon, Device, Implement, Hub, HubImplement
 from asset_tracking import config
 from django.utils import timezone
 import json
@@ -204,6 +204,16 @@ class Command(BaseCommand):
                             implement = Implement.objects.filter(attached_beacon_id=active_beacon).first()
                             if implement:
                                 device.active_implement = implement.serial_number
+                                
+                                # Check if the device is associated with a hub
+                                hub = Hub.objects.filter(hub_device_imei=device.device_imei).first()
+                                if hub:
+                                    HubImplement.objects.get_or_create(
+                                        hub_implement_serial=implement,
+                                        implement_type=implement.model,
+                                        attached_beacon=active_beacon,
+                                        hub_name=hub,
+                                    )
                             
                             device.save()
                         except Exception as e:
