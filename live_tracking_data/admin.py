@@ -36,8 +36,8 @@ class DeviceAdmin(admin.ModelAdmin):
 
 @admin.register(Implement)
 class ImplementAdmin(admin.ModelAdmin):
-    list_display = ('serial_number', 'created_at', 'brand', 'model', 'color', 'location', 'attached_beacon_id')
-    search_fields = ('serial_number', 'attached-beacon_id')
+    list_display = ('serial_number', 'brand', 'model', 'color', 'location', 'attached_beacon_id', 'created_at')
+    search_fields = ('serial_number', 'attached_beacon_id__namespace_id')
 
 @admin.register(Beacon)
 class BeaconAdmin(admin.ModelAdmin):
@@ -57,13 +57,13 @@ class ImplementBrandAdmin(admin.ModelAdmin):
 
 @admin.register(Hub)
 class HubAdmin(admin.ModelAdmin):
-    list_display = ('id', 'hub_name', 'hub_location', 'hub_device_imei', 'created_at')
-    search_fields = ('device_imei', 'hub_name')
+    list_display = ('hub_name', 'hub_device_imei', 'hub_location', 'created_at')
+    search_fields = ('hub_name', 'hub_device_imei__device_imei')
 
 @admin.register(HubImplement)
 class HubImplemendAdmin(admin.ModelAdmin):
-    list_display = ('hub_implement_serial', 'implement_type', 'attached_beacon', 'hub_name', 'created_at')
-    search_fields = ('implement_serial', 'hub_name')
+    readonly_fields = ['serial_number', 'brand', 'model', 'color', 'attached_beacon_id', 'created_at', 'location', 'is_within_hub']
+    list_display = ['serial_number', 'model', 'attached_beacon_id', 'hub', 'is_within_hub']
 
 class FuelCalibrationResultInline(admin.TabularInline):
     model = FuelCalibrationResult

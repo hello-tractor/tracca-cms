@@ -4,12 +4,12 @@ from django.core.exceptions import ValidationError
 
 class live_tracking_data(models.Model):
     id = models.IntegerField(primary_key=True, editable=False)
-    device_id = models.IntegerField()
+    device_id = models.IntegerField(editable=False)
     created_at = models.DateTimeField(default=timezone.now)
     latitude = models.FloatField(default=0.0)
     longitude = models.FloatField(default=0.0)
     speed = models.FloatField(default=0.0)
-    fuel_frequency = models.FloatField(null=True, blank=True)  # Removed max_length
+    fuel_frequency = models.FloatField(null=True, blank=True)
     position = models.CharField(max_length=255, default=0.0)
     engine_state = models.CharField(max_length=50, null=True, blank=True)
     asset_battery = models.FloatField(null=True, blank=True)
@@ -21,7 +21,7 @@ class live_tracking_data(models.Model):
         return f"Device {self.device_id} - {self.latitude}, {self.longitude}"
 
 class Device(models.Model):
-    id = models.IntegerField(primary_key=True)
+    id = models.IntegerField(primary_key=True, editable=False)
     name = models.CharField(max_length=100)
     device_imei = models.CharField(max_length=50, unique=True)
     status = models.CharField(max_length=50)
@@ -39,6 +39,22 @@ class Device(models.Model):
 
     def __str__(self):
         return self.device_imei
+
+class Hub(models.Model):
+    id = models.AutoField(primary_key=True)
+    hub_device_imei = models.OneToOneField(Device, on_delete=models.CASCADE, related_name='hubs')
+    hub_name = models.CharField(max_length=100, null=False, blank=False)
+    created_at = models.DateTimeField(default=timezone.now)
+    hub_location = models.CharField(max_length=100,
+                                    choices=[(loc, loc) for loc in (
+                                        'Kisumu',
+                                        'Nakuru',
+                                        'Nairobi',
+                                    )],
+                                    default='Kisumu')
+
+    def __str__(self):
+        return self.hub_name
 
 class ImplementBrand(models.Model):
     id = models.AutoField(primary_key=True)
@@ -58,7 +74,7 @@ class ImplementBrand(models.Model):
         return self.name
 
 class NewDevice(models.Model):
-    device_id = models.CharField(max_length=100, unique=True)
+    device_id = models.CharField(max_length=100, unique=True, editable=False)
     unique_id = models.CharField(max_length=100, unique=True)
     name = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -77,6 +93,13 @@ class Beacon(models.Model):
 
     def __str__(self):
         return self.namespace_id
+    
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Update the 'is_within_hub' status for related HubImplements
+        hub_implements = HubImplement.objects.filter(attached_beacon_id=self)
+        for hub_implement in hub_implements:
+            hub_implement.update_is_within_hub()
 
 class Implement(models.Model):
     serial_number = models.CharField(max_length=100, primary_key=True, blank=False, default=None)
@@ -84,7 +107,7 @@ class Implement(models.Model):
     model = models.CharField(max_length=100)
     color = models.CharField(max_length=50)
     attached_beacon_id = models.OneToOneField(Beacon, on_delete=models.CASCADE, related_name='implement')
-    created_at = models.DateTimeField(max_length=100, default=timezone.now)
+    created_at = models.DateTimeField(default=timezone.now)
     location = models.CharField(max_length=100,
                                 choices=[(code, name) for code, name in (
                                     ('KE', 'Kenya'),
@@ -95,12 +118,33 @@ class Implement(models.Model):
                                     ('TZ', 'Tanzania'),
                                 )],
                                 default='KE')
+    associated_with_hub = models.BooleanField(default=False)  # New flag field
+    hub = models.ForeignKey(Hub, on_delete=models.SET_NULL, null=True, blank=True)  # New hub field
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)  # Save the Implement first
+        if self.associated_with_hub and self.hub:
+            # Create or update the corresponding HubImplement
+            HubImplement.objects.update_or_create(
+                implement=self,
+                defaults={
+                    'hub': self.hub,
+                    'serial_number': self.serial_number,
+                    'brand': self.brand,
+                    'model': self.model,
+                    'color': self.color,
+                    'attached_beacon_id': self.attached_beacon_id,
+                    'created_at': self.created_at,
+                    'location': self.location,
+                    'is_within_hub': False,  # This will be updated dynamically based on beacons
+                }
+            )
 
     def __str__(self):
         return self.serial_number
 
 class ImplementHistory(models.Model):
-    implement_serial = models.ForeignKey(Implement, on_delete=models.CASCADE, related_name='history_records')  # Changed related_name
+    implement_serial = models.ForeignKey(Implement, on_delete=models.CASCADE, related_name='history_records')
     initial_device = models.ForeignKey(Device, related_name='initial_implements', on_delete=models.SET_NULL, null=True)
     current_device = models.ForeignKey(Device, related_name='current_implements', on_delete=models.SET_NULL, null=True)
     start_date = models.DateTimeField()
@@ -120,31 +164,53 @@ class ImplementHistory(models.Model):
     class Meta:
         unique_together = ('implement_serial', 'start_date')
 
-class Hub(models.Model):
-    id = models.AutoField(primary_key=True)
-    hub_device_imei = models.OneToOneField(Device, on_delete=models.CASCADE, related_name='hubs')
-    hub_name = models.CharField(max_length=100, null=False, blank=False)
-    created_at = models.DateTimeField(max_length=100, default=timezone.now)
-    hub_location = models.CharField(max_length=100,
-                                    choices=[(loc, loc) for loc in (
-                                        'Kisumu',
-                                        'Nakuru',
-                                        'Nairobi',
-                                    )],
-                                    default='Kisumu')
-
-    def __str__(self):
-        return self.hub_name
-
 class HubImplement(models.Model):
-    hub_implement_serial = models.ForeignKey(Implement, on_delete=models.CASCADE, related_name='hub_history')
-    implement_type = models.CharField(max_length=100, null=False, blank=False)
-    attached_beacon = models.OneToOneField(Beacon, on_delete=models.CASCADE, related_name='hub_implement')
-    hub_name = models.ForeignKey(Hub, on_delete=models.CASCADE, related_name='hub_implements')
-    created_at = models.DateTimeField(max_length=100, default=timezone.now)
+    hub = models.ForeignKey('Hub', on_delete=models.CASCADE, related_name='hub_implements', editable=False)
+    
+    # Fields from Implement, with appropriate defaults
+    serial_number = models.CharField(max_length=100, default="UNKNOWN_SERIAL", editable=False)
+    brand = models.ForeignKey('ImplementBrand', on_delete=models.CASCADE, default=1, editable=False)
+    model = models.CharField(max_length=100, default="UNKNOWN_MODEL", editable=False)
+    color = models.CharField(max_length=50, default="UNKNOWN_COLOR", editable=False)
+    attached_beacon_id = models.OneToOneField('Beacon', on_delete=models.CASCADE, editable=False, null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    location = models.CharField(
+        max_length=100, 
+        choices=[
+            ('KE', 'Kenya'),
+            ('RW', 'Rwanda'),
+            ('UG', 'Uganda'),
+            ('NG', 'Nigeria'),
+            ('ET', 'Ethiopia'),
+            ('TZ', 'Tanzania'),
+        ], 
+        default="UNKNOWN_LOCATION", 
+        editable=False
+    )
+
+    # Additional fields specific to HubImplement
+    is_within_hub = models.BooleanField(default=False, editable=False)
 
     def __str__(self):
-        return f"Implement {self.hub_implement_serial.serial_number} - {self.hub_name}"
+        return f"Hub: {self.hub.hub_name} - Serial: {self.serial_number}"
+
+    class Meta:
+        verbose_name = "Hub Implement"
+        verbose_name_plural = "Hub Implements"
+    
+    def update_is_within_hub(self):
+        """
+        Check if the implement's beacon is detected by the hub's device.
+        """
+        hub_device = self.hub.hub_device_imei
+        beacons_detected_by_hub = Beacon.objects.filter(attached_to=hub_device.device_imei)
+        
+        if self.attached_beacon_id in beacons_detected_by_hub:
+            self.is_within_hub = True
+        else:
+            self.is_within_hub = False
+        self.save()
+
 
 class FuelCalibrationResult(models.Model):
     device = models.ForeignKey(Device, related_name='calibration_results', on_delete=models.CASCADE)
