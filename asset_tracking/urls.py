@@ -18,8 +18,13 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.http import HttpResponse
+
+def home(request):
+    return HttpResponse("Tracca CMS Homepage")
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('live_tracking_data/', include('live_tracking_data.urls')),
+    path('', home),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
